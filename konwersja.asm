@@ -31,21 +31,14 @@ niepierwszy_znak:
     sub al, '0'             ;konwersja kodu ASCII na cyfrę
     mov cl, al              ;tymczasowe przechowanie cyfry w cl
     mov ax, liczba             ;przeniesienie liczby do ax
-    mul word [mnoz_10]           ;pomnożenie ax przez 10
+    mul mnoz_10           ;pomnożenie ax przez 10
     add ax, cx              ;dodanie wprowadzonego znaku do liczby
-    jo przekoroczono_zakres
     mov liczba, ax              ;przechowanie liczby w dx
     jmp wczytaj_cyfre
 
 minus:
     mov bl, 1              ;ustaw bl na 1, jeśli liczba jest ujemna
     jmp wczytaj_cyfre
-
-przekoroczono_zakres:
-    mov ah, 09h
-    lea dx, tekst_przekroczono_zakres
-    int 21h                 ;wyświetlenie błędu o przekroczeniu zakresu
-    jmp koniec_programu
 
 zly_znak:
     mov ah, 09h
@@ -70,7 +63,6 @@ _code ends
 _data segment
 	tekst_wprowadz db "Wprowadz liczbe od -32 768 do 32 767: $"
     tekst_zly_znak db "Wprowadzono nieprawidlowy znak!$"
-    tekst_przekroczono_zakres db "Przekroczono zakres!$"
     mnoz_10 dw 10
     liczba dw 0
 _data ends
