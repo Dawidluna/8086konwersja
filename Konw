@@ -1,0 +1,103 @@
+_code segment
+assume cs:_code, ds:_data, ss:_stack
+
+start:    mov ax, _data          ; ustaw segment danych
+          mov ds, ax           ; załaduj DS segment danych
+          mov ax, _stack        ; ustaw segment stosu
+          mov ss, ax           ; załaduj SS segment stosu
+          mov sp, offset top   ; ustaw wskaźnik stosu na koniec stosu
+
+          mov ah, 09h          ; wyświetlenie prośby o wprowadzenie liczby
+          lea dx, tekst_wprowadz
+          int 21h
+
+wczytaj_cyfre:
+          mov ah, 01h          ; wczytanie cyfry
+          int 21h
+          cmp al, 0Dh          ; sprawdzenie, czy wciśnięto Enter
+          je koniec_wczytywania
+
+          cmp bh, 1            ; sprawdzenie, czy to pierwsza cyfra
+          je niepierwszy_znak
+          mov bh, 1            ; ustawienie flagi pierwszej cyfry
+          cmp al, '-'
+          je minus
+
+niepierwszy_znak:
+          cmp al, '0'          ; sprawdzenie, czy znak to cyfra
+          jb zly_znak
+          cmp al, '9'
+          ja zly_znak
+
+          sub al, '0'          ; konwersja kodu ASCII na cyfrę
+          mov cl, al           ; przechowanie cyfry w CL
+          mov ax, liczba       ; załaduj aktualną wartość liczby
+          mul mnoz_10          ; pomnóż przez 10
+          add ax, cx           ; dodaj nową cyfrę
+          mov liczba, ax       ; zapisz wynik w zmiennej liczba
+          jmp wczytaj_cyfre
+
+minus:
+          mov bl, 1            ; ustawienie flagi liczby ujemnej
+          jmp wczytaj_cyfre
+
+zly_znak:
+          mov ah, 09h          ; wyświetlenie błędu nieprawidłowego znaku
+          lea dx, tekst_zly_znak
+          int 21h
+          jmp koniec_programu
+
+koniec_wczytywania:
+          cmp bl, 1            ; sprawdzenie, czy liczba jest ujemna
+          jne pomin_negacje
+          neg liczba           ; jeśli tak, neguj wartość liczby
+
+pomin_negacje:
+          mov ah, 09h          ; wyświetlenie tekstu "Podana liczba wynosi:"
+          lea dx, tekst_wynik
+          int 21h
+
+          call wyswietl_bity   ; wywołanie procedury wyświetlania bitów
+
+koniec_programu:
+          mov ah, 4Ch          ; zakończenie programu
+          mov al, 0
+          int 21h
+
+wyswietl_bity proc
+          mov cx, 16           ; liczba bitów do wyświetlenia (16-bit)
+          mov bx, 8000h        ; maska dla najbardziej znaczącego bitu (bit 15)
+
+wyswietl_bit:
+          mov ax, liczba       ; załaduj wartość liczby
+          test ax, bx          ; sprawdzenie bitu z maską
+          jz zero_bit          ; jeśli 0, przejdź do zero_bit
+          mov dl, '1'          ; jeśli 1, ustaw DL na '1'
+          jmp pokaz_znak
+
+zero_bit:
+          mov dl, '0'          ; ustaw DL na '0'
+
+pokaz_znak:
+          mov ah, 02h          ; funkcja DOS do wyświetlenia znaku
+          int 21h
+
+          shr bx, 1            ; przesunięcie maski w prawo
+          loop wyswietl_bit    ; powtarzaj dla kolejnych bitów
+          ret
+wyswietl_bity endp
+
+_data segment
+tekst_wprowadz db "Wprowadz liczbe od -32 768 do 32 767: $"
+tekst_zly_znak db "Wprowadzono nieprawidlowy znak!$"
+tekst_wynik db 13, 10, "Podana liczba wynosi: $"
+mnoz_10 dw 10
+liczba dw 0
+_data ends
+
+_stack segment stack
+    dw  100h dup(0)           ; rezerwacja pamięci na stos
+    top label word            ; etykieta końca stosu
+_stack ends
+
+end start
