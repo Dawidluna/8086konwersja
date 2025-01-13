@@ -59,6 +59,12 @@ pomin_negacje:
 
           call wyswietl_bity   ; wywołanie procedury wyświetlania bitów
 
+          mov ah, 09h          ; Wyświetlenie tekstu "Podana liczba w kodzie szesnastkowym wynosi:"
+          lea dx, tekst_wynik_hex
+          int 21h
+
+          call wyswietl_hex    ; Wywołanie procedury wyświetlania liczby szesnastkowo
+
 koniec_programu:
           mov ah, 4Ch          ; zakończenie programu
           mov al, 0
@@ -66,7 +72,7 @@ koniec_programu:
 
 wyswietl_bity proc
           mov cx, 16           ; liczba bitów do wyświetlenia (16-bit)
-          mov bx, 8000h        ; maska dla najbardziej znaczącego bitu (bit 15)
+          mov bx, 8000h        ; maska dla najbardziej znaczonego bitu (bit 15)
 
 wyswietl_bit:
           mov ax, liczba       ; załaduj wartość liczby
@@ -87,10 +93,36 @@ pokaz_znak:
           ret
 wyswietl_bity endp
 
+wyswietl_hex proc
+          ; Wyświetlanie liczby w kodzie szesnastkowym
+          mov cx, 4            ; liczba cyfr (16 bitów = 4 cyfry szesnastkowe)
+
+WYSWIETL_CYFRE:
+          mov dx, liczba       ; kopiowanie AX do DX
+          shr dx, 12           ; przesunięcie w prawo o 12 bitów
+          and dx, 0Fh          ; wyizolowanie 4 najmłodszych bitów
+
+          ; Konwersja na znak ASCII
+          cmp dl, 9            ; czy cyfra < 10?
+          jle CYFRA_JEST
+          add dl, 7           ; dla liter A-F
+CYFRA_JEST:
+          add dl, '0'         ; dodanie przesunięcia ASCII
+
+          ; Wyświetlenie znaku
+          mov ah, 02h          ; funkcja INT 21h do wyświetlania znaku
+          int 21h
+
+          shl liczba, 4        ; przesunięcie liczby w lewo o 4 bity
+          loop WYSWIETL_CYFRE  ; zmniejszenie licznika
+          ret
+wyswietl_hex endp
+
 _data segment
 tekst_wprowadz db "Wprowadz liczbe od -32 768 do 32 767: $"
 tekst_zly_znak db "Wprowadzono nieprawidlowy znak!$"
-tekst_wynik db 13, 10, "Podana liczba wynosi: $"
+tekst_wynik db 13, 10, "Podana liczba w kodzie dwojkowym wynosi: $"
+tekst_wynik_hex db 13, 10, "Podana liczba w kodzie szesnastkowym wynosi: $"
 mnoz_10 dw 10
 liczba dw 0
 _data ends
